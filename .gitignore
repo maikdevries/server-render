@@ -1,0 +1,2 @@
+# Ignore macOS directory configuration files
+.DS_Store
