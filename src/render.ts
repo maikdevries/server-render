@@ -12,12 +12,12 @@ function escape(value: unknown): string {
 	return String(value).replace(pattern, (c) => escapes[c]);
 }
 
-function* html(strings: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
-	for (const [i, string] of strings.entries()) {
-		yield string;
+function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
+	yield initial;
 
-		const expr = expressions[i];
-		if (expr) yield escape(expr);
+	for (const [i, string] of strings.entries()) {
+		yield escape(expressions[i]);
+		yield string;
 	}
 }
 
