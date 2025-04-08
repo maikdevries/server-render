@@ -1,0 +1,77 @@
+{
+	"compilerOptions": {
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"checkJs": false,
+		"exactOptionalPropertyTypes": true,
+		"lib": [
+			"dom",
+			"deno.ns"
+		],
+		"noErrorTruncation": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitAny": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"strict": true,
+		"strictBindCallApply": true,
+		"strictBuiltinIteratorReturn": true,
+		"strictFunctionTypes": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"useUnknownInCatchVariables": true,
+		"verbatimModuleSyntax": true
+	},
+	"fmt": {
+		"include": [
+			"src/**/*.ts"
+		],
+		"indentWidth": 4,
+		"lineWidth": 140,
+		"proseWrap": "always",
+		"semiColons": true,
+		"singleQuote": true,
+		"useTabs": true
+	},
+	"lint": {
+		"include": [
+			"src/**/*.ts"
+		],
+		"rules": {
+			"include": [
+				"camelcase",
+				"default-param-last",
+				"eqeqeq",
+				"explicit-function-return-type",
+				"explicit-module-boundary-types",
+				"guard-for-in",
+				"no-await-in-loop",
+				"no-boolean-literal-for-arguments",
+				"no-const-assign",
+				"no-eval",
+				"no-external-import",
+				"no-implicit-declare-namespace-export",
+				"no-inferrable-types",
+				"no-non-null-asserted-optional-chain",
+				"no-non-null-assertion",
+				"no-self-compare",
+				"no-sparse-arrays",
+				"no-sync-fn-in-async-fn",
+				"no-throw-literal",
+				"no-undef",
+				"prefer-ascii",
+				"single-var-declarator",
+				"triple-slash-reference",
+				"verbatim-module-syntax"
+			],
+			"tags": [
+				"recommended"
+			]
+		}
+	}
+}
