@@ -12,19 +12,19 @@ function escape(value: unknown): string {
 	return String(value).replace(pattern, (c) => escapes[c]);
 }
 
-function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
+async function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): AsyncGenerator<string> {
 	yield initial;
 
 	for (const [i, string] of strings.entries()) {
-		yield escape(expressions[i]);
+		yield escape(await expressions[i]);
 		yield string;
 	}
 }
 
-function render(template: Generator<string>): string {
+async function render(template: AsyncGenerator<string>): Promise<string> {
 	let output = '';
 
-	for (const chunk of template) output += chunk;
+	for await (const chunk of template) output += chunk;
 
 	return output;
 }
