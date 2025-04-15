@@ -69,3 +69,23 @@ function substitute(chain: Map<string, string[]>, a: string, c: string): string 
 	const [_, id] = c.match(REGEXP_PLACEHOLDER) ?? [];
 	return a + (id ? chain.get(id)?.reduce(substitute.bind(null, chain)) : c);
 }
+
+export function stream(template: Generator<string>): ReadableStream {
+	return new ReadableStream({
+		start(controller): void {
+			for (const chunk of template) controller.enqueue(chunk);
+		},
+		async pull(controller): Promise<void> {
+			while (queue.size) {
+				const [id, chunk] = await Promise.race(
+					queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>),
+				);
+
+				controller.enqueue(`<template data-id=${id}>${Array.from(render(chunk)).join('')}</template>`);
+				queue.delete(id);
+			}
+
+			controller.close();
+		},
+	}).pipeThrough(new TextEncoderStream());
+}
