@@ -1,6 +1,6 @@
-const pattern = /[&<>"']/g;
+const REGEXP_HTML_ESCAPES = /[&<>"']/g;
 
-const escapes = {
+const MAPPING_HTML_ESCAPES = {
 	'&': '&amp;',
 	'<': '&lt;',
 	'>': '&gt;',
@@ -9,7 +9,7 @@ const escapes = {
 } as const;
 
 function escape(value: unknown): string {
-	return String(value).replace(pattern, (c) => escapes[c]);
+	return String(value).replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES]);
 }
 
 function isIterable(value: unknown): value is Iterable<string> | AsyncIterable<string> {
