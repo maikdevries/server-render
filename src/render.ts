@@ -47,10 +47,8 @@ function* render(chunk: unknown): Generator<string> {
 const queue = new Map<string, Promise<unknown>>();
 
 export async function stringify(template: Generator<string>): Promise<string> {
-	const output = [];
+	const output = Array.from(template);
 	const chain = new Map<string, string[]>();
-
-	for (const chunk of template) output.push(chunk);
 
 	while (queue.size) {
 		const [id, chunk] = await Promise.race(queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>));
