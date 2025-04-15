@@ -33,15 +33,39 @@ function isGenerator(value: any): value is Generator<string> {
 }
 
 function* render(chunk: unknown): Generator<string> {
-	if (Array.isArray(chunk)) for (const part of chunk) yield* render(part);
-	else if (isGenerator(chunk)) yield* chunk;
+	if (chunk instanceof Promise) {
+		const id = crypto.randomUUID();
+		queue.set(id, chunk);
+
+		yield `<server-render data-id='${id}'></server-render>`;
+	} else if (Array.isArray(chunk)) {
+		for (const part of chunk) yield* render(part);
+	} else if (isGenerator(chunk)) yield* chunk;
 	else yield escape(chunk);
 }
 
-export function stringify(template: Generator<string>): string {
+const queue = new Map<string, Promise<unknown>>();
+
+export async function stringify(template: Generator<string>): Promise<string> {
 	const output = [];
+	const chain = new Map<string, string[]>();
 
 	for (const chunk of template) output.push(chunk);
 
-	return output.join('');
+	while (queue.size) {
+		const [id, chunk] = await Promise.race(queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>));
+
+		chain.set(id, Array.from(render(chunk)));
+		queue.delete(id);
+	}
+
+	return output.reduce(substitute.bind(null, chain));
+}
+
+const REGEXP_PLACEHOLDER =
+	/<server-render data-id='([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})'><\/server-render>/i;
+
+function substitute(chain: Map<string, string[]>, a: string, c: string): string {
+	const [_, id] = c.match(REGEXP_PLACEHOLDER) ?? [];
+	return a + (id ? chain.get(id)?.reduce(substitute.bind(null, chain)) : c);
 }
