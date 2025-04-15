@@ -12,12 +12,19 @@ function escape(value: unknown): string {
 	return String(value).replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES]);
 }
 
+const REGEXP_TRIM_START = /\s+</g;
+const REGEXP_TRIM_END = />\s+/g;
+
+function trim(value: string): string {
+	return value.replace(REGEXP_TRIM_START, '<').replace(REGEXP_TRIM_END, '>');
+}
+
 export function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
-	yield initial;
+	yield trim(initial);
 
 	for (const [i, string] of strings.entries()) {
 		yield* render(expressions[i]);
-		yield string;
+		yield trim(string);
 	}
 }
 
