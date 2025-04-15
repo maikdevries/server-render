@@ -12,25 +12,29 @@ function escape(value: unknown): string {
 	return String(value).replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES]);
 }
 
-function isIterable(value: unknown): value is Iterable<string> | AsyncIterable<string> {
-	return typeof value !== 'string' && (value?.[Symbol.iterator] || value?.[Symbol.asyncIterator]);
-}
-
-async function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): AsyncGenerator<string> {
+export function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
 	yield initial;
 
 	for (const [i, string] of strings.entries()) {
-		if (isIterable(expressions[i])) yield* expressions[i];
-		else yield escape(await expressions[i]);
-
+		yield* render(expressions[i]);
 		yield string;
 	}
 }
 
-async function render(template: AsyncGenerator<string>): Promise<string> {
-	let output = '';
+function isGenerator(value: any): value is Generator<string> {
+	return typeof value !== 'string' && typeof value?.[Symbol.iterator] === 'function';
+}
 
-	for await (const chunk of template) output += chunk;
+function* render(chunk: unknown): Generator<string> {
+	if (Array.isArray(chunk)) for (const part of chunk) yield* render(part);
+	else if (isGenerator(chunk)) yield* chunk;
+	else yield escape(chunk);
+}
 
-	return output;
+export function stringify(template: Generator<string>): string {
+	const output = [];
+
+	for (const chunk of template) output.push(chunk);
+
+	return output.join('');
 }
