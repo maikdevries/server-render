@@ -19,7 +19,7 @@ function trim(value: string): string {
 	return value.replace(REGEXP_TRIM_START, '<').replace(REGEXP_TRIM_END, '>');
 }
 
-export function* html([initial, ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
+export function* html([initial = '', ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<string> {
 	yield trim(initial);
 
 	for (const [i, string] of strings.entries()) {
