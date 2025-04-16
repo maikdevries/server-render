@@ -41,32 +41,26 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield escape(chunk);
 }
 
+function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<unknown>>): Generator<string> {
+	for (const part of chunk) {
+		if (typeof part === 'string') yield part;
+		else {
+			queue.set(part.id, part.promise);
+			yield `<server-render data-id='${part.id}'></server-render>`;
+		}
+	}
+}
+
 export async function stringify(template: Generator<Chunk>): Promise<string> {
-	const output = [];
 	const queue = new Map<string, Promise<unknown>>();
 	const chain = new Map<string, string[]>();
 
-	for (const chunk of template) {
-		if (typeof chunk === 'string') output.push(chunk);
-		else {
-			queue.set(chunk.id, chunk.promise);
-			output.push(`<server-render data-id='${chunk.id}'></server-render>`);
-		}
-	}
+	const output = Array.from(renderChunk(template, queue));
 
 	while (queue.size) {
 		const [id, chunk] = await Promise.race(queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>));
-		const buffer = [];
 
-		for (const part of render(chunk)) {
-			if (typeof part === 'string') buffer.push(part);
-			else {
-				queue.set(part.id, part.promise);
-				buffer.push(`<server-render data-id='${part.id}'></server-render>`);
-			}
-		}
-
-		chain.set(id, buffer);
+		chain.set(id, Array.from(renderChunk(render(chunk), queue)));
 		queue.delete(id);
 	}
 
@@ -86,13 +80,7 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 
 	return new ReadableStream({
 		start(controller): void {
-			for (const chunk of template) {
-				if (typeof chunk === 'string') controller.enqueue(chunk);
-				else {
-					queue.set(chunk.id, chunk.promise);
-					controller.enqueue(`<server-render data-id='${chunk.id}'></server-render>`);
-				}
-			}
+			for (const part of renderChunk(template, queue)) controller.enqueue(part);
 		},
 		async pull(controller): Promise<void> {
 			while (queue.size) {
@@ -100,17 +88,7 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 					queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>),
 				);
 
-				const output = [];
-
-				for (const part of render(chunk)) {
-					if (typeof part === 'string') output.push(part);
-					else {
-						queue.set(part.id, part.promise);
-						output.push(`<server-render data-id='${part.id}'></server-render>`);
-					}
-				}
-
-				controller.enqueue(`<template data-id='${id}'>${output.join('')}</template>`);
+				controller.enqueue(`<template data-id='${id}'>${Array.from(renderChunk(render(chunk), queue)).join('')}</template>`);
 				queue.delete(id);
 			}
 
