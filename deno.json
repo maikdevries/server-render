@@ -32,7 +32,8 @@
 	},
 	"fmt": {
 		"include": [
-			"src/**/*.ts"
+			"src/**/*.ts",
+			"test/**/*.ts"
 		],
 		"indentWidth": 4,
 		"lineWidth": 140,
@@ -43,7 +44,8 @@
 	},
 	"lint": {
 		"include": [
-			"src/**/*.ts"
+			"src/**/*.ts",
+			"test/**/*.ts"
 		],
 		"rules": {
 			"include": [
@@ -67,6 +69,7 @@
 				"no-sync-fn-in-async-fn",
 				"no-throw-literal",
 				"no-undef",
+				"no-useless-rename",
 				"prefer-ascii",
 				"single-var-declarator",
 				"triple-slash-reference",
