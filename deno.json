@@ -1,4 +1,7 @@
 {
+	"name": "@maikdevries/server-render",
+	"version": "0.1.0",
+	"exports": "./mod.ts",
 	"compilerOptions": {
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
@@ -73,6 +76,14 @@
 				"recommended"
 			]
 		}
+	},
+	"publish": {
+		"include": [
+			"src/**/*.ts",
+			"LICENSE",
+			"mod.ts",
+			"README.md"
+		]
 	},
 	"imports": {
 		"@std/assert": "jsr:@std/assert@^1.0.12"
