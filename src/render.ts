@@ -81,6 +81,7 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 	return new ReadableStream({
 		start(controller): void {
 			for (const part of renderChunk(template, queue)) controller.enqueue(part);
+			if (queue.size) controller.enqueue(script);
 		},
 		async pull(controller): Promise<void> {
 			while (queue.size) {
@@ -96,3 +97,25 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 		},
 	}).pipeThrough(new TextEncoderStream());
 }
+
+const script = `
+<script>
+	const observer = new MutationObserver(((placeholders, mutations) => {
+		for (const mutation of mutations) {
+			for (const node of Array.from(mutation.addedNodes)) {
+				if (node instanceof HTMLTemplateElement) {
+					Array.from(placeholders).find((p) => p.dataset['id'] === node.dataset['id'])?.replaceWith(node.content);
+					node.remove();
+				}
+			}
+		}
+	}).bind(null, document.getElementsByTagName('server-render')));
+
+	document.addEventListener('DOMContentLoaded', ((script) => {
+		observer.disconnect();
+		script.remove();
+	}).bind(null, document.currentScript));
+
+	observer.observe(document, { 'childList': true, 'subtree': true });
+</script>
+`;
