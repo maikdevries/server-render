@@ -9,7 +9,9 @@ const MAPPING_HTML_ESCAPES = {
 } as const;
 
 function escape(value: string): string {
-	return value.replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES]);
+	return REGEXP_HTML_ESCAPES.test(value)
+		? value.replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES])
+		: value;
 }
 
 const REGEXP_TRIM_START = /\s+</g;
