@@ -36,11 +36,22 @@
 			"src/**/*.ts",
 			"test/**/*.ts"
 		],
+		"bracePosition": "sameLine",
 		"indentWidth": 4,
 		"lineWidth": 140,
+		"newLineKind": "lf",
+		"nextControlFlowPosition": "sameLine",
+		"operatorPosition": "nextLine",
 		"proseWrap": "always",
+		"quoteProps": "preserve",
 		"semiColons": true,
+		"singleBodyPosition": "sameLine",
 		"singleQuote": true,
+		"spaceAround": false,
+		"spaceSurroundingProperties": true,
+		"trailingCommas": "onlyMultiLine",
+		"typeLiteral.separatorKind": "semiColon",
+		"useBraces": "whenNotSingleLine",
 		"useTabs": true
 	},
 	"lint": {
