@@ -43,24 +43,24 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
 }
 
-function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<unknown>>): Generator<string> {
+function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<[string, unknown]>>): Generator<string> {
 	for (const part of chunk) {
 		if (typeof part === 'string') yield part;
 		else {
-			queue.set(part.id, part.promise);
+			queue.set(part.id, part.promise.then((v) => [part.id, v]));
 			yield `<server-render data-id='${part.id}'></server-render>`;
 		}
 	}
 }
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
-	const queue = new Map<string, Promise<unknown>>();
+	const queue = new Map<string, Promise<[string, unknown]>>();
 	const chain = new Map<string, string[]>();
 
 	const output = Array.from(renderChunk(template, queue));
 
 	while (queue.size) {
-		const [id, chunk] = await Promise.race(queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>));
+		const [id, chunk] = await Promise.race(queue.values());
 
 		chain.set(id, Array.from(renderChunk(render(chunk), queue)));
 		queue.delete(id);
@@ -78,7 +78,7 @@ function substitute(chain: Map<string, string[]>, a: string, c: string): string 
 }
 
 export function stream(template: Generator<Chunk>): ReadableStream {
-	const queue = new Map<string, Promise<unknown>>();
+	const queue = new Map<string, Promise<[string, unknown]>>();
 
 	return new ReadableStream({
 		start(controller): void {
@@ -87,9 +87,7 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 		},
 		async pull(controller): Promise<void> {
 			while (queue.size) {
-				const [id, chunk] = await Promise.race(
-					queue.entries().map(([id, p]) => p.then((v) => [id, v]) as Promise<[string, unknown]>),
-				);
+				const [id, chunk] = await Promise.race(queue.values());
 
 				controller.enqueue(`<template data-id='${id}'>${Array.from(renderChunk(render(chunk), queue)).join('')}</template>`);
 				queue.delete(id);
