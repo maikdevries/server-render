@@ -8,9 +8,7 @@ const MAPPING_HTML_ESCAPES = {
 	"'": '&apos;',
 } as const;
 
-function escape(value: unknown): string {
-	if (typeof value !== 'string') return String(value);
-
+function escape(value: string): string {
 	return value.replace(REGEXP_HTML_ESCAPES, (c) => MAPPING_HTML_ESCAPES[c as keyof typeof MAPPING_HTML_ESCAPES]);
 }
 
@@ -40,7 +38,7 @@ function* render(chunk: unknown): Generator<Chunk> {
 	if (chunk instanceof Promise) yield { 'id': crypto.randomUUID(), 'promise': chunk };
 	else if (Array.isArray(chunk)) { for (const part of chunk) yield* render(part); }
 	else if (isGenerator(chunk)) yield* chunk;
-	else yield escape(chunk);
+	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
 }
 
 function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<unknown>>): Generator<string> {
