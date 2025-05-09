@@ -43,11 +43,11 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
 }
 
-function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<[string, unknown]>>): Generator<string> {
+function* renderChunk(chunk: Generator<Chunk>, queue: Map<number, Promise<[number, unknown]>>): Generator<string> {
 	for (const part of chunk) {
 		if (typeof part === 'string') yield part;
 		else {
-			const id = crypto.randomUUID();
+			const id = queue.size;
 
 			queue.set(id, part.then((v) => [id, v]));
 			yield `<server-render data-id='${id}'></server-render>`;
@@ -56,8 +56,8 @@ function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<[strin
 }
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
-	const queue = new Map<string, Promise<[string, unknown]>>();
-	const chain = new Map<string, string[]>();
+	const queue = new Map<number, Promise<[number, unknown]>>();
+	const chain = new Map<number, string[]>();
 
 	const output = Array.from(renderChunk(template, queue));
 
@@ -71,16 +71,15 @@ export async function stringify(template: Generator<Chunk>): Promise<string> {
 	return output.reduce(substitute.bind(null, chain));
 }
 
-const REGEXP_PLACEHOLDER =
-	/<server-render data-id='([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})'><\/server-render>/i;
+const REGEXP_PLACEHOLDER = /<server-render data-id='([0-9])'><\/server-render>/i;
 
-function substitute(chain: Map<string, string[]>, a: string, c: string): string {
+function substitute(chain: Map<number, string[]>, a: string, c: string): string {
 	const [_, id] = c.match(REGEXP_PLACEHOLDER) ?? [];
-	return a + (id ? chain.get(id)?.reduce(substitute.bind(null, chain)) : c);
+	return a + (id ? chain.get(Number.parseInt(id))?.reduce(substitute.bind(null, chain)) : c);
 }
 
 export function stream(template: Generator<Chunk>): ReadableStream {
-	const queue = new Map<string, Promise<[string, unknown]>>();
+	const queue = new Map<number, Promise<[number, unknown]>>();
 
 	return new ReadableStream({
 		start(controller): void {
