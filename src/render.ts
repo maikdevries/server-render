@@ -21,7 +21,7 @@ function trim(value: string): string {
 	return value.replace(REGEXP_TRIM_START, '<').replace(REGEXP_TRIM_END, '>');
 }
 
-type Chunk = string | { 'id': string; 'promise': Promise<unknown> };
+type Chunk = string | Promise<unknown>;
 
 export function* html([initial = '', ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<Chunk> {
 	yield trim(initial);
@@ -37,7 +37,7 @@ function isGenerator(value: any): value is Generator<Chunk> {
 }
 
 function* render(chunk: unknown): Generator<Chunk> {
-	if (chunk instanceof Promise) yield { 'id': crypto.randomUUID(), 'promise': chunk };
+	if (chunk instanceof Promise) yield chunk;
 	else if (Array.isArray(chunk)) { for (const part of chunk) yield* render(part); }
 	else if (isGenerator(chunk)) yield* chunk;
 	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
@@ -47,8 +47,10 @@ function* renderChunk(chunk: Generator<Chunk>, queue: Map<string, Promise<[strin
 	for (const part of chunk) {
 		if (typeof part === 'string') yield part;
 		else {
-			queue.set(part.id, part.promise.then((v) => [part.id, v]));
-			yield `<server-render data-id='${part.id}'></server-render>`;
+			const id = crypto.randomUUID();
+
+			queue.set(id, part.then((v) => [id, v]));
+			yield `<server-render data-id='${id}'></server-render>`;
 		}
 	}
 }
