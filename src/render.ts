@@ -43,29 +43,29 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
 }
 
-function* renderChunk(chunk: Generator<Chunk>, queue: Map<number, Promise<[number, unknown]>>): Generator<string> {
+function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): Generator<string> {
 	for (const part of chunk) {
 		if (typeof part === 'string') yield part;
 		else {
-			const id = queue.size;
+			const id = queue.length;
 
-			queue.set(id, part.then((v) => [id, v]));
+			queue.push(part.then((v) => [id, v]));
 			yield `<server-render data-id='${id}'></server-render>`;
 		}
 	}
 }
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
-	const queue = new Map<number, Promise<[number, unknown]>>();
+	const queue = new Array<Promise<[number, unknown]> | undefined>();
 	const chain = new Map<number, string[]>();
 
 	const output = Array.from(renderChunk(template, queue));
 
-	while (queue.size) {
-		const [id, chunk] = await Promise.race(queue.values());
+	while (queue.filter(Boolean).length) {
+		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
 		chain.set(id, Array.from(renderChunk(render(chunk), queue)));
-		queue.delete(id);
+		queue[id] = undefined;
 	}
 
 	return output.reduce(substitute.bind(null, chain));
@@ -79,19 +79,19 @@ function substitute(chain: Map<number, string[]>, a: string, c: string): string 
 }
 
 export function stream(template: Generator<Chunk>): ReadableStream {
-	const queue = new Map<number, Promise<[number, unknown]>>();
+	const queue = new Array<Promise<[number, unknown]> | undefined>();
 
 	return new ReadableStream({
 		start(controller): void {
 			for (const part of renderChunk(template, queue)) controller.enqueue(part);
-			if (queue.size) controller.enqueue(script);
+			if (queue.length) controller.enqueue(script);
 		},
 		async pull(controller): Promise<void> {
-			while (queue.size) {
-				const [id, chunk] = await Promise.race(queue.values());
+			while (queue.filter(Boolean).length) {
+				const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
 				controller.enqueue(`<template data-id='${id}'>${Array.from(renderChunk(render(chunk), queue)).join('')}</template>`);
-				queue.delete(id);
+				queue[id] = undefined;
 			}
 
 			controller.close();
