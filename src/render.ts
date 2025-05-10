@@ -71,7 +71,7 @@ export async function stringify(template: Generator<Chunk>): Promise<string> {
 	return output.reduce(substitute.bind(null, chain));
 }
 
-const REGEXP_PLACEHOLDER = /<server-render data-id='([0-9])'><\/server-render>/i;
+const REGEXP_PLACEHOLDER = /<server-render data-id='([0-9]+)'><\/server-render>/i;
 
 function substitute(chain: Map<number, string[]>, a: string, c: string): string {
 	const [_, id] = c.match(REGEXP_PLACEHOLDER) ?? [];
