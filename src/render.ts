@@ -32,15 +32,12 @@ export function* html([initial = '', ...strings]: TemplateStringsArray, ...expre
 	}
 }
 
-function isGenerator(value: any): value is Generator<Chunk> {
-	return typeof value !== 'string' && typeof value?.[Symbol.iterator] === 'function';
-}
-
 function* render(chunk: unknown): Generator<Chunk> {
-	if (chunk instanceof Promise) yield chunk;
+	if (typeof chunk === 'string') yield escape(chunk);
+	else if (chunk instanceof Promise) yield chunk;
 	else if (Array.isArray(chunk)) { for (const part of chunk) yield* render(part); }
-	else if (isGenerator(chunk)) yield* chunk;
-	else yield (typeof chunk === 'string' ? escape(chunk) : String(chunk));
+	else if (typeof (chunk as any)?.[Symbol.iterator] === 'function') yield* chunk as Iterable<Chunk>;
+	else yield String(chunk);
 }
 
 function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): Generator<string> {
