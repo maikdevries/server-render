@@ -45,8 +45,8 @@ function* render(chunk: unknown): Generator<Chunk> {
 
 function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): Generator<string> {
 	for (const part of chunk) {
-		if (typeof part === 'string') yield part;
-		else {
+		if (typeof part === 'string' && part.length) yield part;
+		else if (part instanceof Promise) {
 			const id = queue.length;
 
 			queue.push(part.then((v) => [id, v]));
