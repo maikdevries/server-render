@@ -57,25 +57,25 @@ function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unk
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
-	const chain = new Map<number, string[]>();
+	const resolved = new Map<number, string[]>();
 
 	const output = Array.from(renderChunk(template, queue));
 
 	while (queue.filter(Boolean).length) {
 		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
-		chain.set(id, Array.from(renderChunk(render(chunk), queue)));
+		resolved.set(id, Array.from(renderChunk(render(chunk), queue)));
 		queue[id] = undefined;
 	}
 
-	return output.reduce(substitute.bind(null, chain));
+	return output.reduce(substitute.bind(null, resolved));
 }
 
 const REGEXP_PLACEHOLDER = /<server-render data-id='([0-9]+)'><\/server-render>/i;
 
-function substitute(chain: Map<number, string[]>, a: string, c: string): string {
+function substitute(resolved: Map<number, string[]>, a: string, c: string): string {
 	const [_, id] = c.match(REGEXP_PLACEHOLDER) ?? [];
-	return a + (id ? chain.get(Number.parseInt(id))?.reduce(substitute.bind(null, chain)) : c);
+	return a + (id ? resolved.get(Number.parseInt(id))?.reduce(substitute.bind(null, resolved)) : c);
 }
 
 export function stream(template: Generator<Chunk>): ReadableStream {
