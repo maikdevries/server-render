@@ -57,9 +57,10 @@ function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unk
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
-	const resolved = new Map<number, string[]>();
-
 	const output = Array.from(renderChunk(template, queue));
+
+	if (!queue.length) return output.join('');
+	const resolved = new Map<number, string[]>();
 
 	while (queue.filter(Boolean).length) {
 		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
