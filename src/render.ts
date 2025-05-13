@@ -23,13 +23,25 @@ function trim(value: string): string {
 
 type Chunk = string | Promise<unknown>;
 
-export function* html([initial = '', ...strings]: TemplateStringsArray, ...expressions: unknown[]): Generator<Chunk> {
-	yield trim(initial);
+function compile(strings: TemplateStringsArray): (expressions: unknown[]) => Generator<Chunk> {
+	const [first = '', ...rest] = strings.map(trim);
 
-	for (const [i, string] of strings.entries()) {
+	return function* (expressions: unknown[]): Generator<Chunk> {
+		yield first;
+
+		for (const [i, string] of rest.entries()) {
 		yield* render(expressions[i]);
-		yield trim(string);
-	}
+			yield string;
+		}
+	};
+}
+
+const cache = new WeakMap<TemplateStringsArray, (expressions: unknown[]) => Generator<Chunk>>();
+
+export function html(strings: TemplateStringsArray, ...expressions: unknown[]): Generator<Chunk> {
+	if (!cache.has(strings)) cache.set(strings, compile(strings));
+
+	return cache.get(strings)?.(expressions) as Generator<Chunk>;
 }
 
 function* render(chunk: unknown): Generator<Chunk> {
