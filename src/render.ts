@@ -66,19 +66,24 @@ function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unk
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
-	const output = Array.from(renderChunk(template, queue));
+	const chunks: string[] = [];
 
-	if (!queue.length) return output.join('');
+	for (const chunk of renderChunk(template, queue)) chunks.push(chunk);
+
+	if (!queue.length) return chunks.join('');
 	const resolved = new Map<number, string[]>();
 
 	while (queue.some(Boolean)) {
 		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
-		resolved.set(id, Array.from(renderChunk(render(chunk), queue)));
+		const parts: string[] = [];
+		for (const part of renderChunk(render(chunk), queue)) parts.push(part);
+
+		resolved.set(id, parts);
 		queue[id] = undefined;
 	}
 
-	return output.reduce(substitute.bind(null, resolved));
+	return chunks.reduce(substitute.bind(null, resolved));
 }
 
 const REGEXP_PLACEHOLDER = /<server-render data-id='([0-9]+)'><\/server-render>/i;
@@ -93,14 +98,17 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 
 	return new ReadableStream({
 		start(controller): void {
-			for (const part of renderChunk(template, queue)) controller.enqueue(part);
+			for (const chunk of renderChunk(template, queue)) controller.enqueue(chunk);
 			if (queue.length) controller.enqueue(script);
 		},
 		async pull(controller): Promise<void> {
 			while (queue.some(Boolean)) {
 				const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
-				controller.enqueue(`<template data-id='${id}'>${Array.from(renderChunk(render(chunk), queue)).join('')}</template>`);
+				const parts: string[] = [];
+				for (const part of renderChunk(render(chunk), queue)) parts.push(part);
+
+				controller.enqueue(`<template data-id='${id}'>${parts.join('')}</template>`);
 				queue[id] = undefined;
 			}
 
