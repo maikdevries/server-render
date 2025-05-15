@@ -131,7 +131,11 @@ const script = `
 	document.addEventListener('DOMContentLoaded', ((script) => {
 		observer.disconnect();
 		script.remove();
-	}).bind(null, document.currentScript));
+	}).bind(null, document.currentScript), {
+		'capture': true,
+		'once': true,
+		'passive': true,
+	});
 
 	observer.observe(document, { 'childList': true, 'subtree': true });
 </script>
