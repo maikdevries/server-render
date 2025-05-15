@@ -29,9 +29,9 @@ function compile(strings: TemplateStringsArray): (expressions: unknown[]) => Gen
 	return function* (expressions: unknown[]): Generator<Chunk> {
 		yield first;
 
-		for (const [i, string] of rest.entries()) {
-		yield* render(expressions[i]);
-			yield string;
+		for (let i = 0; i < rest.length; i++) {
+			yield* render(expressions[i]);
+			yield rest[i] as string;
 		}
 	};
 }
