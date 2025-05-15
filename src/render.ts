@@ -52,32 +52,32 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield String(chunk);
 }
 
-function* renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): Generator<string> {
+function renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): string[] {
+	const buffer: string[] = [];
+
 	for (const part of chunk) {
-		if (typeof part === 'string' && part.length) yield part;
+		if (typeof part === 'string' && part.length) buffer.push(part);
 		else if (part instanceof Promise) {
 			const id = queue.length;
 
 			queue.push(part.then((v) => [id, v]));
-			yield `<server-render data-id='${id}'></server-render>`;
+			buffer.push(`<server-render data-id='${id}'></server-render>`);
 		}
 	}
+
+	return buffer;
 }
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
-	const chunks: string[] = [];
-
-	for (const chunk of renderChunk(template, queue)) chunks.push(chunk);
+	const chunks = renderChunk(template, queue);
 
 	if (!queue.length) return chunks.join('');
 	const resolved = new Map<number, string[]>();
 
 	while (queue.some(Boolean)) {
 		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
-
-		const parts: string[] = [];
-		for (const part of renderChunk(render(chunk), queue)) parts.push(part);
+		const parts = renderChunk(render(chunk), queue);
 
 		resolved.set(id, parts);
 		queue[id] = undefined;
@@ -98,15 +98,13 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 
 	return new ReadableStream({
 		start(controller): void {
-			for (const chunk of renderChunk(template, queue)) controller.enqueue(chunk);
+			controller.enqueue(renderChunk(template, queue).join(''));
 			if (queue.length) controller.enqueue(script);
 		},
 		async pull(controller): Promise<void> {
 			while (queue.some(Boolean)) {
 				const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
-
-				const parts: string[] = [];
-				for (const part of renderChunk(render(chunk), queue)) parts.push(part);
+				const parts = renderChunk(render(chunk), queue);
 
 				controller.enqueue(`<template data-id='${id}'>${parts.join('')}</template>`);
 				queue[id] = undefined;
