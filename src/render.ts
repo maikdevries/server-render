@@ -53,19 +53,23 @@ function* render(chunk: unknown): Generator<Chunk> {
 }
 
 function renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): string[] {
-	const buffer: string[] = [];
+	const output: string[] = [];
+	let buffer = '';
 
 	for (const part of chunk) {
-		if (typeof part === 'string' && part.length) buffer.push(part);
+		if (typeof part === 'string' && part.length) buffer += part;
 		else if (part instanceof Promise) {
 			const id = queue.length;
 
 			queue.push(part.then((v) => [id, v]));
-			buffer.push(`<server-render data-id='${id}'></server-render>`);
+			output.push(buffer, `<server-render data-id='${id}'></server-render>`);
+
+			buffer = '';
 		}
 	}
 
-	return buffer;
+	output.push(buffer);
+	return output;
 }
 
 export async function stringify(template: Generator<Chunk>): Promise<string> {
