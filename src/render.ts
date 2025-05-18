@@ -77,9 +77,8 @@ export async function stringify(template: Generator<Chunk>): Promise<string> {
 
 	while (queue.some(Boolean)) {
 		const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
-		const parts = renderChunk(render(chunk), queue);
 
-		resolved.set(id, parts);
+		resolved.set(id, renderChunk(render(chunk), queue));
 		queue[id] = undefined;
 	}
 
@@ -104,9 +103,8 @@ export function stream(template: Generator<Chunk>): ReadableStream {
 		async pull(controller): Promise<void> {
 			while (queue.some(Boolean)) {
 				const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
-				const parts = renderChunk(render(chunk), queue);
 
-				controller.enqueue(`<template data-id='${id}'>${parts.join('')}</template>`);
+				controller.enqueue(`<template data-id='${id}'>${renderChunk(render(chunk), queue).join('')}</template>`);
 				queue[id] = undefined;
 			}
 
