@@ -57,6 +57,15 @@ Deno.test('iterables', async () => {
 	);
 });
 
+Deno.test('numerical_iterables', async () => {
+	assertEquals(
+		await render.stringify(
+			render.html`The numerical iterable expression ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]} should be rendered properly`,
+		),
+		'The numerical iterable expression 1234567890 should be rendered properly',
+	);
+});
+
 Deno.test('thenable', async () => {
 	assertEquals(
 		await render.stringify(render.html`A thenable expression ${Promise.resolve('should be')} rendered properly`),
@@ -64,9 +73,27 @@ Deno.test('thenable', async () => {
 	);
 });
 
+Deno.test('nested_thenable', async () => {
+	assertEquals(
+		await render.stringify(
+			render.html`A ${Promise.resolve(render.html`nested thenable expression ${Promise.resolve('should be')}`)} rendered properly`,
+		),
+		'A nested thenable expression should be rendered properly',
+	);
+});
+
 Deno.test('composition', async () => {
 	assertEquals(
 		await render.stringify(render.html`A composition of tagged templates ${render.html`should be`} rendered properly`),
 		'A composition of tagged templates should be rendered properly',
+	);
+});
+
+Deno.test('composed_iterable_thenable', async () => {
+	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+	assertEquals(
+		await render.stringify(render.html`<ol>${days.map((x) => render.html`<li>${Promise.resolve(x)}</li>`)}</ol>`),
+		'<ol><li>Monday</li><li>Tuesday</li><li>Wednesday</li><li>Thursday</li><li>Friday</li><li>Saturday</li><li>Sunday</li></ol>',
 	);
 });
