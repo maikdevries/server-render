@@ -22,11 +22,12 @@ function trim(value: string): string {
 }
 
 type Chunk = string | Promise<unknown>;
+export type Template = Generator<Chunk>;
 
-function compile(strings: TemplateStringsArray): (expressions: unknown[]) => Generator<Chunk> {
+function compile(strings: TemplateStringsArray): (expressions: unknown[]) => Template {
 	const [first = '', ...rest] = strings.map(trim);
 
-	return function* (expressions: unknown[]): Generator<Chunk> {
+	return function* (expressions: unknown[]): Template {
 		yield first;
 
 		for (let i = 0; i < rest.length; i++) {
@@ -36,15 +37,15 @@ function compile(strings: TemplateStringsArray): (expressions: unknown[]) => Gen
 	};
 }
 
-const cache = new WeakMap<TemplateStringsArray, (expressions: unknown[]) => Generator<Chunk>>();
+const cache = new WeakMap<TemplateStringsArray, (expressions: unknown[]) => Template>();
 
-export function html(strings: TemplateStringsArray, ...expressions: unknown[]): Generator<Chunk> {
+export function html(strings: TemplateStringsArray, ...expressions: unknown[]): Template {
 	if (!cache.has(strings)) cache.set(strings, compile(strings));
 
-	return cache.get(strings)?.(expressions) as Generator<Chunk>;
+	return cache.get(strings)?.(expressions) as Template;
 }
 
-function* render(chunk: unknown): Generator<Chunk> {
+function* render(chunk: unknown): Template {
 	if (typeof chunk === 'string') yield escape(chunk);
 	else if (chunk instanceof Promise) yield chunk;
 	else if (Array.isArray(chunk)) { for (const part of chunk) yield* render(part); }
@@ -52,7 +53,7 @@ function* render(chunk: unknown): Generator<Chunk> {
 	else yield String(chunk);
 }
 
-function renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unknown]> | undefined>): string[] {
+function renderChunk(chunk: Template, queue: Array<Promise<[number, unknown]> | undefined>): string[] {
 	const output: string[] = [];
 	let buffer = '';
 
@@ -72,7 +73,7 @@ function renderChunk(chunk: Generator<Chunk>, queue: Array<Promise<[number, unkn
 	return output;
 }
 
-export async function stringify(template: Generator<Chunk>): Promise<string> {
+export async function stringify(template: Template): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
 	const chunks = renderChunk(template, queue);
 
@@ -96,7 +97,7 @@ function substitute(resolved: Map<number, string[]>, a: string, c: string): stri
 	return a + (id ? resolved.get(Number.parseInt(id))?.reduce(substitute.bind(null, resolved)) : c);
 }
 
-export function stream(template: Generator<Chunk>): ReadableStream {
+export function stream(template: Template): ReadableStream {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
 
 	return new ReadableStream({
