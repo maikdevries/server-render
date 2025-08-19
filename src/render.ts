@@ -77,7 +77,7 @@ export async function stringify(template: Template): Promise<string> {
 	const queue = new Array<Promise<[number, unknown]> | undefined>();
 	const chunks = renderChunk(template, queue);
 
-	if (!queue.length) return chunks.join('');
+	if (!queue.length) return chunks[0] as string;
 	const resolved = new Map<number, string[]>();
 
 	while (queue.some(Boolean)) {
