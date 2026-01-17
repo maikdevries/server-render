@@ -1,2 +1,6 @@
 # Ignore macOS directory configuration files
 .DS_Store
+
+# Ignore IDE configuration files
+.vscode
+.zed
