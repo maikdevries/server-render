@@ -109,7 +109,9 @@ export function stream(template: Template): ReadableStream {
 			while (queue.some(Boolean)) {
 				const [id, chunk] = await Promise.race(queue.filter(Boolean)) as [number, unknown];
 
-				controller.enqueue(`<template data-id='${id}'>${renderChunk(render(chunk), queue).join('')}</template>`);
+				controller.enqueue(
+					`<template data-id='${id}'>${renderChunk(render(chunk), queue).join('')}</template>`,
+				);
 				queue[id] = undefined;
 			}
 

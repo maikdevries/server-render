@@ -39,7 +39,7 @@
 		],
 		"bracePosition": "sameLine",
 		"indentWidth": 4,
-		"lineWidth": 140,
+		"lineWidth": 120,
 		"newLineKind": "lf",
 		"nextControlFlowPosition": "sameLine",
 		"operatorPosition": "nextLine",
