@@ -9,8 +9,10 @@
 		"erasableSyntaxOnly": true,
 		"exactOptionalPropertyTypes": true,
 		"lib": [
+			"deno.ns",
 			"dom",
-			"deno.ns"
+			"dom.asynciterable",
+			"dom.iterable"
 		],
 		"noErrorTruncation": true,
 		"noFallthroughCasesInSwitch": true,
